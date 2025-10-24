@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: microservices-project-nginx:latest
+    ports:
+      - "80:80"
+    networks:
+      - microservices-network
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+    depends_on:
+      - user-service
+      - order-service
+
+  user-service:
+    image: microservices-project-user-service:latest
+    networks:
+      - microservices-network
+    environment:
+      - PORT=8080
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+
+  order-service:
+    image: microservices-project-order-service:latest
+    networks:
+      - microservices-network
+    environment:
+      - PORT=8081
+      - USER_SERVICE_URL=http://user-service:8080
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+    depends_on:
+      - user-service
+
+networks:
+  microservices-network:
+    driver: overlay

@@ -1,73 +1,98 @@
-# Микросервисная архитектура на Go
+# Микросервисная архитектура на Go с NGINX и Docker Swarm
 
-Проект демонстрирует работу двух микросервисов с использованием Docker и Docker Compose.
-
-## Структура проекта
+## Архитектура
 ```
-microservices-project/
-├── user-service/          # Сервис управления пользователями
-│   ├── main.go
-│   ├── Dockerfile
-│   └── go.mod
-├── order-service/         # Сервис управления заказами
-│   ├── main.go
-│   ├── Dockerfile
-│   └── go.mod
-├── docker-compose.yml
-└── README.md
+Client → NGINX (Port 80) → User Service (Port 8080)
+                         → Order Service (Port 8081)
 ```
 
-## Сервисы
+## Компоненты
 
-### User Service (порт 8080)
-- `GET /users` - получить всех пользователей
-- `POST /users` - создать пользователя
-- `GET /users/{id}` - получить пользователя по ID
-- `GET /health` - проверка здоровья
+### NGINX
+- Reverse Proxy
+- API Gateway
+- Балансировка нагрузки
 
-### Order Service (порт 8081)
-- `GET /orders` - получить все заказы
-- `POST /orders` - создать заказ
-- `GET /orders/{id}` - получить заказ по ID
-- `GET /health` - проверка здоровья
+### User Service
+- Управление пользователями
+- REST API
 
-## Запуск проекта
+### Order Service
+- Управление заказами
+- Межсервисное взаимодействие с User Service
 
-1. Убедитесь, что установлен Docker и Docker Compose
-2. Склонируйте репозиторий
-3. Перейдите в директорию проекта
-4. Запустите сервисы:
+## Запуск с Docker Compose
 ```bash
 docker-compose up --build
 ```
 
+Доступ через NGINX:
+- http://localhost/api/users
+- http://localhost/api/orders
+
+## Запуск в Docker Swarm
+
+### Инициализация Swarm
+```bash
+docker swarm init
+```
+
+### Сборка образов
+```bash
+docker-compose build
+```
+
+### Развёртывание Stack
+```bash
+docker stack deploy -c docker-stack.yml microservices
+```
+
+### Проверка сервисов
+```bash
+docker stack services microservices
+docker stack ps microservices
+```
+
+### Масштабирование
+```bash
+docker service scale microservices_user-service=5
+```
+
+### Удаление Stack
+```bash
+docker stack rm microservices
+```
+
 ## Тестирование API
 
-### Получить всех пользователей
+### Через NGINX
 ```bash
-curl http://localhost:8080/users
-```
+# Получить пользователей
+curl http://localhost/api/users
 
-### Создать пользователя
-```bash
-curl -X POST http://localhost:8080/users \
+# Создать пользователя
+curl -X POST http://localhost/api/users \
   -H "Content-Type: application/json" \
-  -d '{"name":"Алексей Смирнов","email":"alexey@example.com"}'
-```
+  -d '{"name":"Иван","email":"ivan@test.com"}'
 
-### Получить все заказы
-```bash
-curl http://localhost:8081/orders
-```
+# Получить заказы
+curl http://localhost/api/orders
 
-### Создать заказ
-```bash
-curl -X POST http://localhost:8081/orders \
+# Создать заказ
+curl -X POST http://localhost/api/orders \
   -H "Content-Type: application/json" \
-  -d '{"user_id":1,"product":"Клавиатура","amount":5000}'
+  -d '{"user_id":1,"product":"Товар","amount":1000}'
 ```
 
-## Остановка сервисов
+## Остановка
+
+### Docker Compose
 ```bash
 docker-compose down
+```
+
+### Docker Swarm
+```bash
+docker stack rm microservices
+docker swarm leave --force
 ```
