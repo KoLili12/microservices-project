@@ -1,11 +1,24 @@
 services:
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nginx-gateway
+    ports:
+      - "80:80"
+    depends_on:
+      - user-service
+      - order-service
+    networks:
+      - microservices-network
+
   user-service:
     build:
       context: ./user-service
       dockerfile: Dockerfile
     container_name: user-service
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     environment:
       - PORT=8080
     networks:
@@ -16,8 +29,8 @@ services:
       context: ./order-service
       dockerfile: Dockerfile
     container_name: order-service
-    ports:
-      - "8081:8081"
+    expose:
+      - "8081"
     environment:
       - PORT=8081
       - USER_SERVICE_URL=http://user-service:8080
